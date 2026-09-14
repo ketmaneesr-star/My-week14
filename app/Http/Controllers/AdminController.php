@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\Blog;
+
+class AdminController extends Controller
+{
+    public function __construct()
+{
+    $this->middleware('auth');
+}
+    function blog()
+    {
+        $blogs = Blog::paginate(10);
+        return View('blogs', compact('blogs'));
+    }
+    function about()
+    {
+        $name = "เกษมณี ศรีเงิน";
+        $studentCode = "68152310198-6";
+        $branch = "เทคโนโลยีสารสนเทศ (IT)";
+        $class = "IDI เทียบโอน";
+        return View("abouts", compact("name", "studentCode", "branch", "class"));
+    }
+
+    function create()
+    {
+        return View("from");
+    }
+    function insert(Request $request)
+    {
+        $request->validate([
+            'title' => 'required | max:50',
+            'content' => 'required',
+        ],
+            [
+                'title.required' => 'กรุณากรอกชื่อบทความ',
+                'title.max' => 'ชื่อบทความต้องไม่เกิน 50 ตัวอักษร',
+                'content.required' => 'กรุณากรอกเนื้อหา',
+            ]
+        );
+        $data = ['title' => $request->title, 'content' => $request->content];
+        Blog::insert($data);
+        return redirect('/author/blog');
+    }
+    function delete($id)
+    {
+        Blog::where('id', $id)->delete();
+        return redirect()->back();
+    }   
+    
+    function edit($id)
+    {
+        $blog = Blog::find($id);
+        return view('edit', compact('blog'));
+    }
+
+    function update(Request $request, $id)
+    {
+        $blog = Blog::find($id);
+        $request->validate([
+            'title' => 'required|max:50',
+            'content' => 'required',
+            'status' => 'required|boolean',
+        ], [
+            'title.required' => 'กรุณาใส่ชื่อบทความ',
+            'title.max' => 'ชื่อบทความต้องไม่เกิน 50 ตัวอักษร',
+            'content.required' => 'กรุณาใส่เนื้อหา',
+            'status.required' => 'กรุณาเลือกสถานะการเผยแพร่',
+        ]);
+        $data = [
+            'title' => $request->title,
+            'content' => $request->content,
+            'status' => $request->status,
+            'updated_at' => now()
+        ];
+        $blog->update($data);
+        return redirect('/author/blog');
+    }
+     
+     function change($id)
+     {
+         $blog = Blog::find($id);
+         if ($blog) {
+             $newStatus = !$blog->status;
+             $data = ['status' => $newStatus];
+            DB::table("blogs")->where('id', $id)->update($data);
+         }
+         return redirect()->back();
+     }
+ }
